@@ -165,6 +165,11 @@ minerals_stack_df_cov <- cov(minerals_stack_df, use = 'complete')
 
 ################## Ok ,let's add the layers in terra
 model_TF <- glm(Geothermal ~ Temperature + Faults, family = binomial, data = new_ai_data_df)
+model_TFM <- glm(Geothermal ~ ., family = binomial, data = new_ai_data_df)
+vif_TFM <- car::vif(model_TFM)
+cat("VIF for TFM Model:\n")
+print(vif_TFM)
+
 new_ai_data_df_cor <- cor(new_ai_data_df, use = 'complete')
 new_ai_data_df_cov <- cov(new_ai_data_df, use = 'complete')
 
@@ -181,16 +186,45 @@ model_TFCHE <- glm(Geothermal ~ Temperature+Faults+Chalcedony+Hematite+Epsomite,
                    family = binomial, data = s3_df)
 model_TFCG  <- glm(Geothermal ~ Temperature+Faults+Chalcedony+Gypsum,
                    family = binomial, data = s3_df)
-
+model_TFCKGE <- glm(Geothermal ~ Temperature+Faults+Chalcedony+Kaolinite+Gypsum+Epsomite,
+                    family = binomial, data = s3_df)
+model_TFCKGH <- glm(Geothermal ~ Temperature+Faults+Chalcedony+Kaolinite+Gypsum+Hematite,
+                    family = binomial, data = s3_df)
+model_TFCK  <- glm(Geothermal ~ Temperature+Faults+Chalcedony+Kaolinite,
+                   family = binomial, data = s3_df)
+model_TFCGH <- glm(Geothermal ~ Temperature+Faults+Chalcedony+Gypsum+Hematite,
+                    family = binomial, data = s3_df)
+model_TFKGHE <- glm(Geothermal ~ Temperature+Faults+Kaolinite+Gypsum+Hematite+Epsomite,
+                    family = binomial, data = s3_df)
+model_TFKGH <- glm(Geothermal ~ Temperature+Faults+Kaolinite+Gypsum+Hematite,
+                    family = binomial, data = s3_df)
 vif_TFKGE <- car::vif(model_TFKGE)
 cat("VIF for TFKGE Model:\n")
 print(vif_TFKGE)
+vif_TFCKGH <- car::vif(model_TFCKGH)
+cat("VIF for TFCKGH Model:\n")
+print(vif_TFCKGH)
+vif_TFCGH <- car::vif(model_TFCGH)
+cat("VIF for TFCGH Model:\n")
+print(vif_TFCGH)
+vif_TFCKGE <- car::vif(model_TFCKGE)
+cat("VIF for TFCKGE Model:\n")
+print(vif_TFCKGE)
+vif_TFCK <- car::vif(model_TFCK)
+cat("VIF for TFCK Model:\n")
+print(vif_TFCK)
 vif_TFCHE <- car::vif(model_TFCHE)
 cat("VIF for TFCHE Model:\n")
 print(vif_TFCHE)
 vif_TFCG  <- car::vif(model_TFCG)
 cat("VIF for TFCG Model:\n")
 print(vif_TFCG)
+vif_TFKGHE <- car::vif(model_TFKGHE)
+cat("VIF for TFKGHE Model:\n")
+print(vif_TFKGHE)
+vif_TFKGH <- car::vif(model_TFKGH)
+cat("VIF for TFKGH Model:\n")
+print(vif_TFKGH)
 
 ###################
 pacman::p_load(caret)
@@ -208,13 +242,38 @@ TF_glm_raster    <- raster::predict(new_ai_data, model_TF)
 TFCG_glm_raster  <- raster::predict(new_ai_data, model_TFCG)
 TFKGE_glm_raster <- raster::predict(new_ai_data, model_TFKGE)
 TFCHE_glm_raster <- raster::predict(new_ai_data, model_TFCHE)
+TFCKGH_glm_raster <- raster::predict(new_ai_data, model_TFCKGH)
+TFKGH_glm_raster <- raster::predict(new_ai_data, model_TFKGH)
+TFM_glm_raster    <- raster::predict(new_ai_data, model_TFM)
 names(TF_glm_raster)    <- "TF_glm_raster"
 names(TFCG_glm_raster)  <- "TFCG_glm_raster"
 names(TFKGE_glm_raster) <- "TFKGE_glm_raster"
 names(TFCHE_glm_raster) <- "TFCHE_glm_raster"
+names(TFCKGH_glm_raster) <- "TFCKGH_glm_raster"
+names(TFKGH_glm_raster) <- "TFKGH_glm_raster"
+names(TFM_glm_raster)    <- "TFM_glm_raster"
 glm_rasters <- raster::stack(TF_glm_raster, TFCG_glm_raster, TFKGE_glm_raster, TFCHE_glm_raster)
+glm_rasters <- raster::stack(TF_glm_raster, TFM_glm_raster, TFCKGH_glm_raster, TFKGH_glm_raster)
 plot(glm_rasters>0.5)
 plot(new_ai_data[["Geothermal"]])
+
+ground_truth <- factor(
+  ifelse(raster::values(new_ai_data$Geothermal)>=0.5, "true", "false"), 
+  levels = c("true", "false"))
+caret::confusionMatrix(data = factor(
+  ifelse(raster::values(TF_glm_raster)>=0.5, "true", "false"), 
+  levels = c("true", "false")), reference = ground_truth)
+caret::confusionMatrix(data = factor(
+  ifelse(raster::values(TFM_glm_raster)>=0.5, "true", "false"), 
+  levels = c("true", "false")), reference = ground_truth)
+caret::confusionMatrix(data = factor(
+  ifelse(raster::values(TFCKGH_glm_raster)>=0.5, "true", "false"), 
+  levels = c("true", "false")), reference = ground_truth)
+caret::confusionMatrix(data = factor(
+  ifelse(raster::values(TFKGH_glm_raster)>=0.5, "true", "false"), 
+  levels = c("true", "false")), reference = ground_truth)
+
+doe_writeRaster(new_ai_data, "d:/MNGN599/brady_minerals_som")
 
 ## Plotting results
 pacman::p_load(tmap, tmaptools)

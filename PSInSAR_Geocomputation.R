@@ -33,7 +33,7 @@ Velocities <- as.data.frame(PSInSAR[,c("X", "Y", "VEL")])
 # Velocities$VEL <- as.numeric(Velocities$VEL)
 rm(PSInSAR)
 
-names(Velocities, )
+names(Velocities)
 # s <- terra::rast("E:/HyMap_USA_2003_B_NV_HyVista/Brady_ref_L1C_mos.bil")
 # s <- terra::rast(xmin=325209, xmax=336531, ymin=4395438, ymax=4412103, res=c(15,15), crs="epsg:32611")
 
