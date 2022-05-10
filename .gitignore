@@ -41,3 +41,5 @@ vignettes/*.pdf
 *.xlsx
 *.csv
 *.RData
+*.RDS
+*.png
