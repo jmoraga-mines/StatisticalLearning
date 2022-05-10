@@ -3,7 +3,8 @@ if (!require("pacman")){
   require("pacman")
 }
 
-pacman::p_load(sf, terra, tidyverse, mlr3verse)
+pacman::p_load(sf, terra, tidyverse, mlr3verse, caret)
+#remotes::install_github("mlr-org/mlr3extralearners")
 
 input_som_file = "d:/geoai_som/brady_som_output.gri" # "d:/ThesisLayers/AI_Stacks/brady_ai_stack2.grd"
 input_stack_file = "d:/ThesisLayers/AI_Stacks/brady_ai_stack2.grd"
@@ -97,24 +98,26 @@ stack_sf <- as.data.frame(s, xy = FALSE)
 stack_sf <- na.omit(stack_sf)
 stack_sf$Geothermal <- factor(if_else(stack_sf$Geothermal==1, "true", "false"),
                               levels = c("true", "false"))
-resampling_sp2 <- mlr3::rsmp('repeated_cv', folds = 5, repeats = 2)
+
+set.seed(123)
 task_classification2 <- mlr3::as_task_classif(stack_sf,
                                             target = "Geothermal",
                                             positive = "true",
-                                            id = "geothermal_task")
-resampling_sp2 <- mlr3::rsmp('repeated_cv', folds = 5, repeats = 2)
+                                            id = "geothermal_classification")
+resampling_sp2 <- mlr3::rsmp('repeated_cv', folds = 5, repeats = 2) # , ratio = 0.1) # ratio of train and test
 logistic_learner <- mlr3::lrn("classif.log_reg", id = "binary") # Logistic regression
 print(logistic_learner)
 
-
+set.seed(42)
 rr_sp2 <- mlr3::resample(task = task_classification2,
                         learner = logistic_learner,
                         store_models = TRUE,
-                        resampling = resampling_sp2)
+                        resampling = resampling_sp2)  
 rr_sp2$score(measures = c(msr("classif.acc"), msr("classif.bacc"), msr("classif.fbeta")))
 rr_sp2$aggregate(measures = c(msr("classif.acc"), msr("classif.bacc"), msr("classif.fbeta")))
 
 
+##############  Simple logistic learner, no resampling / cross-validation
 train_set <- sample(task_classification2$nrow, 0.8 * task_classification2$nrow)
 test_set  <- setdiff(seq_len(task_classification2$nrow), train_set)
 logistic_learner$train(task_classification2, row_ids = train_set) # NULL) #, row_ids = train_set)
