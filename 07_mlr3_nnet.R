@@ -6,7 +6,7 @@ if (!require("pacman")){
 pacman::p_load(sf, terra, tidyverse, mlr3verse, nnet)
 
 dir1 = "/store03/geodata/MachineLearning/doe-som"
-dir1 = "d:/geoai_som"
+dir2 = "d:/geoai_som"
 if(dir.exists(dir1)) {
   dir_base = dir1
 } else if(dir.exists(dir2)){

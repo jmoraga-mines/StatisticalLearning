@@ -125,8 +125,18 @@ if (!require("pacman")){
   install.packages("pacman")
   require("pacman")
 }
-pacman::p_load(caret, sf, terra, tidyverse, mlr3verse, pROC)
-m <- raster::stack("d:/ThesisLayers/AI_Stacks/MineralStacks/brady_minerals_stack")
+pacman::p_load(caret, sf, terra, tidyverse, mlr3verse, pROC, mlr3spatiotempcv)
+dir1 = "/store03/thesis/ai_stacks/MineralStacks"
+dir2 = "d:/ThesisLayers/AI_Stacks/MineralStacks"
+if(dir.exists(dir1)) {
+  dir_base = dir1
+} else if(dir.exists(dir2)){
+  dir_base = dir2
+} else {
+  print("Error: data directories do not exist")
+}
+input_stack_file = file.path(dir_base, "brady_minerals_stack.gri")
+m <- raster::stack(input_stack_file)
 ########       Spatioemporal sampling from here and on...
 new_ai_data_xydf <- as.data.frame(m, xy=TRUE) # We will use coordinates for spatial sampling
 new_ai_data_xydf <- na.omit(new_ai_data_xydf)
