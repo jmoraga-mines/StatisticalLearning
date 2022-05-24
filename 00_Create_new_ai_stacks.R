@@ -5,6 +5,10 @@ if (!require("pacman")){
 
 pacman::p_load(caret, sf, terra, tidyverse, mlr3verse, pROC)
 
+# PSInSAR analysis
+# Original file in: /store03/geodata/RawData/Mahmut/SAR/Results/PSI/Brady_and_Desert/2017-2019/72Images
+
+
 doe_writeRaster <- function(x, filename, format="raster", overwrite=TRUE, bandorder="BSQ"){
   if(tools::file_ext(filename) != "grd") {
     filename <- tools::file_path_sans_ext(filename)
@@ -34,15 +38,40 @@ roads <- raster::shapefile("E:/Jim+Erika/Built Up - projected.shp")
 roads <- roads["id"]
 som_stack <- raster::stack(som_stack_file)
 deformation_layer <- raster::raster("D:/ThesisLayers/Deformation/Raster/Deformation.tif")
-minerals_layer <- raster::stack("D:/mm_final/HyMap/HyMapFull_tcimf")
-mineral_names <- names(minerals_layer)
-mineral_names <- gsub(".*\\.\\.(.*)\\.", "\\1", mineral_names)
+
+tcimf_minerals_layer <- raster::stack("D:/mm_final/HyMap/HyMapFull_tcimf")
+tcimf_mineral_names <- names(minerals_layer)
+tcimf_mineral_names <- gsub(".*\\.\\.(.*)\\.", "\\1", mineral_names)
 cat("Minerals ok? ")
 cat(paste0(
-  all(mineral_names == c("Chalcedony", "Kaolinite", "Gypsum", "Hematite", 
+  all(tcimf_mineral_names == c("Chalcedony", "Kaolinite", "Gypsum", "Hematite", 
+                             "Epsomite"))), 
+  "\n")
+tcimf_minerals_layer <- raster::projectRaster(tcimf_minerals_layer, som_stack)
+
+
+osp_minerals_layer <- raster::stack("D:/mm_final/HyMap/HyMapFull_osp")
+osp_mineral_names <- names(osp_minerals_layer)
+osp_mineral_names <- gsub(".*\\.\\.(.*)\\.", "\\1", osp_mineral_names)
+cat("Minerals ok? ")
+cat(paste0(
+  all(osp_mineral_names == c("Chalcedony", "Kaolinite", "Gypsum", "Hematite", 
+                             "Epsomite"))), 
+  "\n")
+osp_minerals_layer <- raster::projectRaster(osp_minerals_layer, som_stack)
+names(osp_minerals_layer) <- osp_mineral_names
+
+
+sam_minerals_layer <- raster::stack("D:/mm_final/HyMap/HyMapFull_sam_rule")
+sam_mineral_names <- names(minerals_layer)
+sam_mineral_names <- gsub(".*\\.\\.(.*)\\.", "\\1", mineral_names)
+cat("Minerals ok? ")
+cat(paste0(
+  all(sam_mineral_names == c("Chalcedony", "Kaolinite", "Gypsum", "Hematite", 
                          "Epsomite"))), 
   "\n")
-minerals_layer <- raster::projectRaster(minerals_layer, som_stack)
+sam_minerals_layer <- raster::projectRaster(sam_minerals_layer, som_stack)
+sam_minerals_layer <- pi-sam_minerals_layer
 minerals_layer[minerals_layer<0] <- 0
 minerals_layer <- raster::scale(minerals_layer)
 minerals_layer <- normalize_raster(minerals_layer)

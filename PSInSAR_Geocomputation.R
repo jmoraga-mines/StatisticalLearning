@@ -6,9 +6,20 @@ if (!require("pacman")){
 pacman::p_load(sf, terra, tmap, dplyr)
 
 # Reads 
+# Original files in: /store03/geodata/RawData/Mahmut/SAR/Results/PSI/Brady_and_Desert/2017-2019/72Images
+SarprozFile <- "d:/Geocomputation/SARPROZ/72Images/Brady_72img_TS_7.csv"
 SarprozFile <- "d:/Geocomputation/SARPROZ/Brady_72img_TS_7.csv"
-PSInSAR <- read.csv2(SarprozFile, sep = ",", dec = ".", 
+SarprozFile <- "d:/Geocomputation/SARPROZ/Brady_72img_Adjusted.csv"
+PSInSAR_Jim <- read.csv2(SarprozFile, sep = ",", dec = ".", 
                      stringsAsFactors = F, strip.white = T)
+
+PSInSAR <- subset(PSInSAR, select=c(LAT, LON, Vel01, COHER))
+colnames(PSInSAR) <- c("Latitude", "Longitude", "Velocity", "Coherence")
+
+PSInSAR_sf <- st_as_sf(PSInSAR, coords = c("Longitude", "Latitude"), 
+                       agr = "constant", crs=4326)
+
+Geo_ai_sf <- raster::extract(brady_ai_stack2, PSInSAR_sf, na.rm=TRUE)
 
 # Loads and plots  thematic map of the state of Nevada
 pacman::p_load(tigris)
@@ -34,6 +45,13 @@ Velocities <- as.data.frame(PSInSAR[,c("X", "Y", "VEL")])
 rm(PSInSAR)
 
 names(Velocities)
+velocities_mean <- mean(Velocities$VEL)
+velocities_sd <- sd(Velocities$VEL)
+geo_factor <- 1
+velocities_threshold <- velocities_mean - geo_factor*velocities_sd
+nongeo_threshold <- velocities_mean + geo_factor*velocities_sd
+Velocities$Geothermal <- ifelse(Velocities$VEL<velocities_threshold, 1, ifelse(Velocities$VEL>nongeo_threshold, 0, NA))
+
 # s <- terra::rast("E:/HyMap_USA_2003_B_NV_HyVista/Brady_ref_L1C_mos.bil")
 # s <- terra::rast(xmin=325209, xmax=336531, ymin=4395438, ymax=4412103, res=c(15,15), crs="epsg:32611")
 
@@ -41,11 +59,12 @@ names(Velocities)
 s <- terra::rast(xmin=325209, xmax=336531, ymin=4395438, ymax=4412103, res=c(5,5), crs="epsg:32611")
 s <- terra::rast(xmin=325209, xmax=(325209+1132*5), ymin=(4412103-1666*5), ymax=4412103, 
                  res=c(30,30), crs="epsg:32611")
+# s <- terra::rast(deformation_layer)
 v1 <- st_as_sf(Velocities, coords = c("X", "Y"), crs=crs(s))
 v1 <- st_crop(v1, st_bbox(s))
-r <- rasterize(vect(v1), s, field="VEL")
+r <- rasterize(vect(v1), terra::rast(s), field="VEL")
 plot(r, col=heat.colors(20))
-
+raster::spplot(raster::raster(r), main="Geothermal")
 
 
 
