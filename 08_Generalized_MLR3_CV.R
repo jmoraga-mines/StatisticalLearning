@@ -82,7 +82,10 @@ nn_sp$score(measures = c(msr("classif.acc"), msr("classif.bacc"), msr("classif.f
 nn_sp$aggregate(measures = c(msr("classif.acc"), msr("classif.bacc"), msr("classif.fbeta")))
 
 
-nn_7_pred = f2(nn_sp, 5)
+nn_7_pred = f2(nn_sp, 2)
+
+save(list=c("lr_pred", "nn_1_pred", "nn_7_pred"), file = "predictions.Rdata")
+saveRDS(nn_sp, file="nn7_sp.Rds")
 
 rm(nn_sp)
 
